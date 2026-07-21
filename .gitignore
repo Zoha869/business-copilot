@@ -3,3 +3,4 @@ echo "__pycache__/
 venv/
 .venv/
 .vscode/" > .gitignore
+.env

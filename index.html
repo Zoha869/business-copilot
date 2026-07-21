@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zoha AI — Assistant</title>
+<title>InsightAI — Business Copilot</title>
 <style>
   :root{
     --bg:#F6F7F9;
@@ -49,16 +49,316 @@
     background:var(--bg);
     color:var(--text);
     transition:background .25s ease, color .25s ease;
-    overflow:hidden;
   }
 
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+
+  /* =========================================================
+     LANDING PAGE
+     ========================================================= */
+  #landingPage{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .land-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 40px;
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+  }
+  .land-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:.2px;
+  }
+  .land-brand .brand-dot{
+    width:11px;height:11px;border-radius:50%;
+    background:linear-gradient(135deg,var(--navy),var(--gold));
+    flex-shrink:0;
+  }
+  .land-nav-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .theme-toggle-land{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text);
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .theme-toggle-land:hover{ background:var(--gold-soft); }
+  .theme-toggle-land svg{ width:17px; height:17px; }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:10px 20px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:transform .15s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{
+    background:var(--navy);
+    color:#fff;
+    box-shadow:0 4px 14px rgba(18,41,77,0.25);
+  }
+  .btn-primary:hover{ background:var(--navy-2); }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text);
+  }
+  .btn-ghost:hover{ background:var(--surface-2); }
+  .btn svg{ width:16px; height:16px; flex-shrink:0; }
+
+  /* Hero */
+  .hero{
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+    padding:56px 40px 40px;
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:48px;
+    align-items:center;
+  }
+  .hero-eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    background:var(--gold-soft);
+    padding:6px 12px;
+    border-radius:999px;
+    margin-bottom:20px;
+  }
+  .hero h1{
+    font-family:"Georgia","Iowan Old Style",serif;
+    font-size:46px;
+    line-height:1.12;
+    font-weight:600;
+    margin:0 0 18px;
+    letter-spacing:.1px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--gold);
+    position:relative;
+  }
+  .hero p.lead{
+    font-size:16.5px;
+    line-height:1.65;
+    color:var(--muted);
+    max-width:480px;
+    margin:0 0 30px;
+  }
+  .hero-actions{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .hero-note{
+    margin-top:16px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  /* Hero visual: a mock "advice card" stack, echoing the chat bubbles */
+  .hero-visual{
+    position:relative;
+    height:340px;
+  }
+  .mock-card{
+    position:absolute;
+    width:88%;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    padding:18px 20px;
+  }
+  .mock-card .tag{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--gold);
+    margin-bottom:8px;
+    display:block;
+  }
+  .mock-card .line{
+    height:9px;
+    border-radius:5px;
+    background:var(--surface-2);
+    margin-bottom:8px;
+  }
+  .mock-card .line.short{ width:55%; }
+  .mock-1{ top:0; left:0; z-index:3; }
+  .mock-2{ top:120px; left:10%; z-index:2; opacity:.85; }
+  .mock-3{ top:225px; left:2%; z-index:1; opacity:.6; }
+
+  /* Feature grid */
+  .section{
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+    padding:60px 40px;
+  }
+  .section-head{
+    max-width:560px;
+    margin:0 0 36px;
+  }
+  .section-eyebrow{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:8px;
+  }
+  .section-head h2{
+    font-family:"Georgia","Iowan Old Style",serif;
+    font-size:28px;
+    font-weight:600;
+    margin:0 0 8px;
+  }
+  .section-head p{
+    color:var(--muted);
+    font-size:14.5px;
+    line-height:1.6;
+    margin:0;
+  }
+
+  .feature-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+  }
+  .feature-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px 20px;
+    box-shadow:var(--shadow);
+  }
+  .feature-card .num{
+    font-family:"Georgia",serif;
+    font-size:13px;
+    color:var(--gold);
+    font-weight:700;
+    margin-bottom:12px;
+  }
+  .feature-card h3{
+    font-size:15.5px;
+    margin:0 0 8px;
+    font-weight:600;
+  }
+  .feature-card p{
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.55;
+    margin:0;
+  }
+
+  /* CTA band */
+  .cta-band{
+    max-width:1180px;
+    width:100%;
+    margin:0 auto 60px;
+    padding:0 40px;
+  }
+  .cta-inner{
+    background:var(--navy);
+    border-radius:20px;
+    padding:44px 40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+    color:#fff;
+  }
+  .cta-inner h2{
+    font-family:"Georgia",serif;
+    font-size:24px;
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .cta-inner p{
+    margin:0;
+    color:rgba(255,255,255,0.75);
+    font-size:14px;
+    max-width:420px;
+  }
+  .cta-inner .btn-primary{
+    background:var(--gold);
+    color:var(--navy);
+    box-shadow:none;
+  }
+  .cta-inner .btn-primary:hover{ background:#c9a44a; }
+
+  .land-footer{
+    border-top:1px solid var(--border);
+    padding:22px 40px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12.5px;
+  }
+
+  @media (max-width:860px){
+    .hero{ grid-template-columns:1fr; padding:36px 22px; }
+    .hero h1{ font-size:34px; }
+    .hero-visual{ display:none; }
+    .feature-grid{ grid-template-columns:1fr 1fr; }
+    .section{ padding:44px 22px; }
+    .land-nav{ padding:18px 22px; }
+    .cta-band{ padding:0 22px; }
+    .cta-inner{ padding:32px 24px; }
+  }
+  @media (max-width:560px){
+    .feature-grid{ grid-template-columns:1fr; }
+    .hero h1{ font-size:28px; }
+  }
+
+  /* =========================================================
+     APP (CHAT)
+     ========================================================= */
   .app{
     display:flex;
     height:100vh;
     width:100vw;
+    overflow:hidden;
   }
 
-  /* ---------- Sidebar ---------- */
   .sidebar{
     width:var(--sidebar-w);
     min-width:var(--sidebar-w);
@@ -95,27 +395,86 @@
   .sidebar-bottom{
     padding:14px;
     border-top:1px solid var(--border);
+    position:relative;
   }
 
-  .theme-toggle{
+  .user-row{
     width:100%;
     display:flex;
     align-items:center;
     gap:10px;
-    padding:10px 12px;
+    padding:8px;
     border-radius:10px;
-    border:1px solid var(--border);
-    background:var(--surface-2);
-    color:var(--text);
     cursor:pointer;
-    font-size:13.5px;
-    font-family:inherit;
     transition:background .2s ease;
+    border:1px solid transparent;
   }
-  .theme-toggle:hover{ background:var(--gold-soft); }
-  .theme-toggle svg{ width:16px; height:16px; flex-shrink:0; }
+  .user-row:hover{ background:var(--surface-2); }
+  .user-avatar{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    object-fit:cover;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .user-meta{
+    min-width:0;
+    flex:1;
+  }
+  .user-name{
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .user-email{
+    font-size:11px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .user-row svg.chev{
+    width:14px;height:14px;
+    color:var(--muted);
+    flex-shrink:0;
+    transition:transform .18s ease;
+  }
+  .user-row.open svg.chev{ transform:rotate(180deg); }
 
-  /* ---------- Sidebar collapse button (top-left, floats over content) ---------- */
+  .logout-menu{
+    position:absolute;
+    left:14px;
+    right:14px;
+    bottom:64px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    display:none;
+  }
+  .logout-menu.show{ display:block; }
+  .logout-menu button{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:11px 14px;
+    background:transparent;
+    border:none;
+    color:#C0392B;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:left;
+  }
+  .logout-menu button:hover{ background:var(--surface-2); }
+  .logout-menu svg{ width:15px; height:15px; }
+
   .panel-btn{
     position:fixed;
     top:16px;
@@ -141,7 +500,6 @@
     left:calc(var(--sidebar-w) + 16px);
   }
 
-  /* ---------- Main ---------- */
   .main{
     flex:1;
     display:flex;
@@ -157,7 +515,6 @@
     flex-direction:column;
   }
 
-  /* Empty / greeting state */
   .empty-state{
     flex:1;
     display:flex;
@@ -181,7 +538,6 @@
     font-size:15px;
   }
 
-  /* Messages */
   .messages{
     flex:1;
     max-width:760px;
@@ -193,10 +549,7 @@
     gap:18px;
   }
 
-  .msg-row{
-    display:flex;
-    width:100%;
-  }
+  .msg-row{ display:flex; width:100%; }
   .msg-row.user{ justify-content:flex-end; }
   .msg-row.bot{ justify-content:flex-start; }
 
@@ -220,13 +573,18 @@
     border:1px solid var(--border);
     border-bottom-left-radius:4px;
   }
-
-  .typing{
-    display:inline-flex;
-    gap:4px;
-    align-items:center;
-    padding:2px 0;
+  .bubble p{ margin:0 0 8px; }
+  .bubble p:last-child{ margin-bottom:0; }
+  .bubble ul, .bubble ol{
+    margin:0 0 8px;
+    padding-left:20px;
   }
+  .bubble ul:last-child, .bubble ol:last-child{ margin-bottom:0; }
+  .bubble li{ margin-bottom:4px; }
+  .bubble li:last-child{ margin-bottom:0; }
+  .bubble strong{ font-weight:700; }
+
+  .typing{ display:inline-flex; gap:4px; align-items:center; padding:2px 0; }
   .typing span{
     width:6px;height:6px;border-radius:50%;
     background:var(--muted);
@@ -236,7 +594,6 @@
   .typing span:nth-child(3){ animation-delay:.4s; }
   @keyframes blink{ 0%,80%,100%{opacity:.25;} 40%{opacity:1;} }
 
-  /* ---------- Input area ---------- */
   .composer-wrap{
     width:100%;
     display:flex;
@@ -289,13 +646,6 @@
   .send-btn:disabled{ opacity:.4; cursor:not-allowed; }
   .send-btn svg{ width:16px; height:16px; }
 
-  .empty-composer{
-    width:100%;
-    max-width:640px;
-    margin:0 auto;
-  }
-
-  /* ---------- Overlay for mobile sidebar ---------- */
   .overlay{
     display:none;
     position:fixed;
@@ -304,7 +654,6 @@
     z-index:40;
   }
 
-  /* ---------- Responsive / mobile ---------- */
   @media (max-width:720px){
     .sidebar{
       position:fixed;
@@ -324,29 +673,166 @@
     .composer-wrap{ padding:12px 12px 16px; }
     .empty-state h1{ font-size:24px; }
   }
+
+  /* Loading gate while auth resolves */
+  #authGate{
+    position:fixed;
+    inset:0;
+    background:var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    color:var(--muted);
+    font-size:13.5px;
+  }
 </style>
 </head>
 <body data-theme="light">
-<div class="app" id="app">
+
+<!-- Shown briefly while we check for an existing Supabase session -->
+<div id="authGate">Loading…</div>
+
+<!-- ============================= LANDING PAGE ============================= -->
+<div id="landingPage" style="display:none;">
+  <nav class="land-nav">
+    <div class="land-brand">
+      <span class="brand-dot"></span>
+      InsightAI
+    </div>
+    <div class="land-nav-actions">
+      <button class="theme-toggle-land" id="themeToggleLand" aria-label="Toggle theme">
+        <svg id="themeIconLand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </button>
+      <button class="btn btn-ghost" id="navLoginBtn">Log in</button>
+      <button class="btn btn-primary" id="navSignupBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+        Sign up
+      </button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="hero-eyebrow">AI Business Copilot</span>
+      <h1>The smart co-pilot for<br><em>running your business.</em></h1>
+      <p class="lead">InsightAI gives you practical, step-by-step answers on marketing, sales, pricing, and growth — no jargon, just straightforward advice you can act on right away.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="heroSignupBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.25 1.4-1.6 4.1-5.35 4.1-3.2 0-5.8-2.65-5.8-5.9s2.6-5.9 5.8-5.9c1.82 0 3.04.78 3.74 1.44l2.55-2.46C16.9 3.7 14.65 2.7 12 2.7 6.98 2.7 2.9 6.78 2.9 11.8s4.08 9.1 9.1 9.1c5.25 0 8.73-3.7 8.73-8.9 0-.6-.07-1.05-.15-1.5z"/></svg>
+          Continue with Google
+        </button>
+        <button class="btn btn-ghost" id="heroLearnBtn">See what you get ↓</button>
+      </div>
+      <p class="hero-note">Start for free · Just a Google account needed · No card required</p>
+    </div>
+    <div class="hero-visual">
+      <div class="mock-card mock-3">
+        <span class="tag">Pricing</span>
+        <div class="line"></div>
+        <div class="line short"></div>
+      </div>
+      <div class="mock-card mock-2">
+        <span class="tag">Customer Growth</span>
+        <div class="line"></div>
+        <div class="line short"></div>
+      </div>
+      <div class="mock-card mock-1">
+        <span class="tag">Marketing Strategy</span>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line short"></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="featuresSection">
+    <div class="section-head">
+      <div class="section-eyebrow">What your copilot can do</div>
+      <h2>For everyday business decisions</h2>
+      <p>Built around the most common questions small business owners face — practical steps, plain language.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="num">01</div>
+        <h3>Marketing Strategies</h3>
+        <p>Build a marketing plan that fits your budget and audience — from social media to local promotions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">02</div>
+        <h3>Customer Growth</h3>
+        <p>Practical, low-cost ways to bring in new customers and win back returning ones.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">03</div>
+        <h3>Sales Improvement</h3>
+        <p>Straightforward, actionable steps to boost conversions and repeat sales.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">04</div>
+        <h3>Pricing Ideas</h3>
+        <p>Set the right price for your product or service — balancing profit and competition.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">05</div>
+        <h3>Business Planning</h3>
+        <p>Help with short-term and long-term planning — from setting priorities to your next step.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">06</div>
+        <h3>Competitor Analysis</h3>
+        <p>Understand your competitors and build your own distinct, stronger position.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-band">
+    <div class="cta-inner">
+      <div>
+        <h2>Your copilot is ready for your business.</h2>
+        <p>Sign in with Google and ask your first question right away — completely free.</p>
+      </div>
+      <button class="btn btn-primary" id="ctaSignupBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.25 1.4-1.6 4.1-5.35 4.1-3.2 0-5.8-2.65-5.8-5.9s2.6-5.9 5.8-5.9c1.82 0 3.04.78 3.74 1.44l2.55-2.46C16.9 3.7 14.65 2.7 12 2.7 6.98 2.7 2.9 6.78 2.9 11.8s4.08 9.1 9.1 9.1c5.25 0 8.73-3.7 8.73-8.9 0-.6-.07-1.05-.15-1.5z"/></svg>
+        Get started with Google
+      </button>
+    </div>
+  </div>
+
+  <footer class="land-footer">
+    © 2026 InsightAI — Business Copilot for small businesses.
+  </footer>
+</div>
+
+<!-- ============================= CHAT APP ============================= -->
+<div class="app" id="app" style="display:none;">
 
   <div class="overlay" id="overlay"></div>
 
-  <!-- Sidebar: kept intentionally minimal -->
   <aside class="sidebar collapsed" id="sidebar">
     <div class="sidebar-top">
       <div class="brand-dot"></div>
-      <div class="brand-name">Zoha AI</div>
+      <div class="brand-name">InsightAI</div>
     </div>
     <div class="sidebar-body"></div>
     <div class="sidebar-bottom">
-      <button class="theme-toggle" id="themeToggle">
-        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-        <span id="themeLabel">Dark mode</span>
-      </button>
+      <div class="logout-menu" id="logoutMenu">
+        <button id="logoutBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Log out
+        </button>
+      </div>
+      <div class="user-row" id="userRow">
+        <img class="user-avatar" id="userAvatar" src="" alt="">
+        <div class="user-meta">
+          <div class="user-name" id="userName">—</div>
+          <div class="user-email" id="userEmail"></div>
+        </div>
+        <svg class="chev" id="userChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </div>
     </div>
   </aside>
 
-  <!-- Sidebar toggle, top-left -->
   <button class="panel-btn" id="panelBtn" aria-label="Toggle sidebar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
   </button>
@@ -372,13 +858,26 @@
   </main>
 </div>
 
+<!-- Supabase JS client (v2) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // ---------- Supabase setup ----------
+  // NOTE: SUPABASE_URL must be the project base URL (no /rest/v1/ suffix) —
+  // the JS client adds the right paths itself.
+  const SUPABASE_URL = "https://uadwglrqfrurduucjyhz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhZHdnbHJxZnJ1cmR1dWNqeWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1Mjk4NTUsImV4cCI6MjEwMDEwNTg1NX0.ag23UHM3HdtxXsiRvkTOwEFL4QP8Q9YtMcEBwxLxSe4";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const API_URL = "http://127.0.0.1:8000/chat";
 
   const body = document.body;
-  const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = document.getElementById('themeIcon');
-  const themeLabel = document.getElementById('themeLabel');
+  const authGate = document.getElementById('authGate');
+  const landingPage = document.getElementById('landingPage');
+  const appEl = document.getElementById('app');
+
+  const themeToggleLand = document.getElementById('themeToggleLand');
+  const themeIconLand = document.getElementById('themeIconLand');
+
   const app = document.getElementById('app');
   const sidebar = document.getElementById('sidebar');
   const panelBtn = document.getElementById('panelBtn');
@@ -389,34 +888,107 @@
   const emptyState = document.getElementById('emptyState');
   const chatScroll = document.getElementById('chatScroll');
 
+  const userRow = document.getElementById('userRow');
+  const userAvatar = document.getElementById('userAvatar');
+  const userName = document.getElementById('userName');
+  const userEmail = document.getElementById('userEmail');
+  const logoutMenu = document.getElementById('logoutMenu');
+  const logoutBtn = document.getElementById('logoutBtn');
+
   const isMobile = () => window.innerWidth <= 720;
 
-  // ---------- Theme ----------
+  // ---------- Theme (single toggle, lives on the landing page) ----------
   const sunIcon = `<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>`;
   const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
 
   function applyTheme(theme){
     body.setAttribute('data-theme', theme);
-    if(theme === 'dark'){
-      themeIcon.innerHTML = moonIcon;
-      themeLabel.textContent = 'Light mode';
-    } else {
-      themeIcon.innerHTML = sunIcon;
-      themeLabel.textContent = 'Dark mode';
-    }
-    localStorage.setItem('zoha-ai-theme', theme);
+    themeIconLand.innerHTML = theme === 'dark' ? moonIcon : sunIcon;
+    localStorage.setItem('insightai-theme', theme);
   }
-
-  const savedTheme = localStorage.getItem('zoha-ai-theme') ||
+  const savedTheme = localStorage.getItem('insightai-theme') ||
     (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   applyTheme(savedTheme);
-
-  themeToggle.addEventListener('click', () => {
-    const current = body.getAttribute('data-theme');
-    applyTheme(current === 'dark' ? 'light' : 'dark');
+  themeToggleLand.addEventListener('click', () => {
+    applyTheme(body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 
-  // ---------- Sidebar toggle ----------
+  // ---------- Auth: Google sign-in via Supabase ----------
+  async function signInWithGoogle(){
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+    if(error) alert('Could not start Google sign-in: ' + error.message);
+  }
+
+  document.getElementById('navLoginBtn').addEventListener('click', signInWithGoogle);
+  document.getElementById('navSignupBtn').addEventListener('click', signInWithGoogle);
+  document.getElementById('heroSignupBtn').addEventListener('click', signInWithGoogle);
+  document.getElementById('ctaSignupBtn').addEventListener('click', signInWithGoogle);
+  document.getElementById('heroLearnBtn').addEventListener('click', () => {
+    document.getElementById('featuresSection').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  function showLanding(){
+    authGate.style.display = 'none';
+    landingPage.style.display = 'block';
+    appEl.style.display = 'none';
+  }
+
+  function showApp(user){
+    authGate.style.display = 'none';
+    landingPage.style.display = 'none';
+    appEl.style.display = 'flex';
+
+    const meta = user.user_metadata || {};
+    const name = meta.full_name || meta.name || user.email || 'User';
+    const avatar = meta.avatar_url || meta.picture || '';
+
+    userName.textContent = name;
+    userEmail.textContent = user.email || '';
+    if(avatar){
+      userAvatar.src = avatar;
+    } else {
+      userAvatar.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#12294D"/><text x="16" y="21" font-size="14" fill="#fff" text-anchor="middle" font-family="Arial">${name.charAt(0).toUpperCase()}</text></svg>`
+      );
+    }
+  }
+
+  // Toggle the logout menu when the user row is clicked
+  userRow.addEventListener('click', () => {
+    logoutMenu.classList.toggle('show');
+    userRow.classList.toggle('open');
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    // onAuthStateChange below flips the UI back to the landing page
+  });
+
+  // React to sign-in / sign-out (also fires right after the OAuth redirect back)
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    logoutMenu.classList.remove('show');
+    userRow.classList.remove('open');
+    if(session && session.user){
+      showApp(session.user);
+    } else {
+      showLanding();
+    }
+  });
+
+  // Initial check on page load
+  (async function initAuth(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(session && session.user){
+      showApp(session.user);
+    } else {
+      showLanding();
+    }
+  })();
+
+  // ---------- Sidebar toggle (chat app) ----------
   function openSidebar(){
     if(isMobile()){
       sidebar.classList.add('mobile-open');
@@ -454,6 +1026,57 @@
     }
   });
 
+  // ---------- Minimal markdown renderer for bot replies ----------
+  function escapeHtml(str){
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderMarkdown(raw){
+    const escaped = escapeHtml(raw);
+    const lines = escaped.split('\n');
+    let html = '';
+    let listType = null; // 'ul' | 'ol' | null
+
+    function closeList(){
+      if(listType){
+        html += listType === 'ul' ? '</ul>' : '</ol>';
+        listType = null;
+      }
+    }
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+
+      if(trimmed === ''){
+        closeList();
+        return;
+      }
+
+      // Bold: **text**
+      let formatted = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      const bulletMatch = formatted.match(/^[-*]\s+(.*)/);
+      const numberedMatch = formatted.match(/^\d+[.)]\s+(.*)/);
+
+      if(bulletMatch){
+        if(listType !== 'ul'){ closeList(); html += '<ul>'; listType = 'ul'; }
+        html += `<li>${bulletMatch[1]}</li>`;
+      } else if(numberedMatch){
+        if(listType !== 'ol'){ closeList(); html += '<ol>'; listType = 'ol'; }
+        html += `<li>${numberedMatch[1]}</li>`;
+      } else {
+        closeList();
+        html += `<p>${formatted}</p>`;
+      }
+    });
+
+    closeList();
+    return html;
+  }
+
   // ---------- Chat logic ----------
   function addMessage(text, sender){
     if(emptyState.style.display !== 'none'){
@@ -464,7 +1087,11 @@
     row.className = `msg-row ${sender}`;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.textContent = text;
+    if(sender === 'bot'){
+      bubble.innerHTML = renderMarkdown(text);
+    } else {
+      bubble.textContent = text;
+    }
     row.appendChild(bubble);
     messagesEl.appendChild(row);
     chatScroll.scrollTop = chatScroll.scrollHeight;
@@ -488,6 +1115,26 @@
     if(row) row.remove();
   }
 
+  function formatBotReply(data){
+    // Preferred: backend already sent a ready-to-show text reply.
+    if(data.reply && typeof data.reply === 'string'){
+      return data.reply;
+    }
+    // Fallback: backend sent structured tool output (e.g. sales analysis)
+    // without a formatted "reply" — build a readable message from it here
+    // so the UI never shows a false "couldn't understand" message.
+    if(data.analysis && typeof data.analysis === 'object'){
+      const a = data.analysis;
+      const lines = ["Here's the breakdown of your sales data:", ""];
+      if(a.total_sales !== undefined) lines.push(`- Total sales: ${a.total_sales}`);
+      if(a.average_sales !== undefined) lines.push(`- Average sales: ${Number(a.average_sales).toFixed(2)}`);
+      if(a.highest_sales !== undefined) lines.push(`- Highest sales: ${a.highest_sales}`);
+      if(a.lowest_sales !== undefined) lines.push(`- Lowest sales: ${a.lowest_sales}`);
+      return lines.join('\n');
+    }
+    return "Sorry, I couldn't understand that.";
+  }
+
   async function sendMessage(){
     const text = input.value.trim();
     if(!text) return;
@@ -504,12 +1151,18 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text })
       });
+
+      if(!res.ok){
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error (${res.status})`);
+      }
+
       const data = await res.json();
       removeTyping();
-      addMessage(data.message || "Sorry, kuch samajh nahi aaya.", 'bot');
+      addMessage(formatBotReply(data), 'bot');
     } catch(err){
       removeTyping();
-      addMessage("Backend se connect nahi ho raha. Check karo ke FastAPI server (main.py) run ho raha hai.", 'bot');
+      addMessage("Couldn't connect to the backend. Make sure the FastAPI server (main.py) is running.", 'bot');
     } finally {
       sendBtn.disabled = false;
     }
