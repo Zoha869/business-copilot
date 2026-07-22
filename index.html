@@ -19,9 +19,10 @@
     --bubble-user:#12294D;
     --bubble-user-text:#FFFFFF;
     --bubble-bot:#FFFFFF;
+    --danger:#C0392B;
     --shadow:0 2px 10px rgba(18,41,77,0.07);
     --radius:16px;
-    --sidebar-w:230px;
+    --sidebar-w:250px;
   }
 
   [data-theme="dark"]{
@@ -192,7 +193,6 @@
     color:var(--muted);
   }
 
-  /* Hero visual: a mock "advice card" stack, echoing the chat bubbles */
   .hero-visual{
     position:relative;
     height:340px;
@@ -226,7 +226,6 @@
   .mock-2{ top:120px; left:10%; z-index:2; opacity:.85; }
   .mock-3{ top:225px; left:2%; z-index:1; opacity:.6; }
 
-  /* Feature grid */
   .section{
     max-width:1180px;
     width:100%;
@@ -289,7 +288,6 @@
     margin:0;
   }
 
-  /* CTA band */
   .cta-band{
     max-width:1180px;
     width:100%;
@@ -390,7 +388,82 @@
     letter-spacing:.2px;
   }
 
-  .sidebar-body{ flex:1; }
+  .new-chat-wrap{
+    padding:12px 12px 4px;
+  }
+  .new-chat-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .new-chat-btn:hover{ background:var(--gold-soft); }
+  .new-chat-btn svg{ width:16px; height:16px; flex-shrink:0; }
+
+  .sidebar-body{
+    flex:1;
+    overflow-y:auto;
+    padding:10px 8px;
+  }
+  .history-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding:10px 8px 6px;
+  }
+  .history-empty{
+    padding:10px 8px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .history-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:9px 10px;
+    border-radius:9px;
+    cursor:pointer;
+    font-size:13.3px;
+    color:var(--text);
+    transition:background .15s ease;
+    margin-bottom:2px;
+  }
+  .history-item:hover{ background:var(--surface-2); }
+  .history-item.active{ background:var(--gold-soft); }
+  .history-item .title{
+    flex:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .history-item .del-btn{
+    opacity:0;
+    width:22px;height:22px;
+    border-radius:6px;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:opacity .15s ease, background .15s ease, color .15s ease;
+  }
+  .history-item:hover .del-btn{ opacity:1; }
+  .history-item .del-btn:hover{ background:var(--surface); color:var(--danger); }
+  .history-item .del-btn svg{ width:13px; height:13px; }
 
   .sidebar-bottom{
     padding:14px;
@@ -594,6 +667,15 @@
   .typing span:nth-child(3){ animation-delay:.4s; }
   @keyframes blink{ 0%,80%,100%{opacity:.25;} 40%{opacity:1;} }
 
+  /* Blinking cursor while a bot bubble is still streaming */
+  .stream-cursor::after{
+    content:"▍";
+    display:inline-block;
+    margin-left:1px;
+    animation:blink 1s infinite step-start;
+    color:var(--muted);
+  }
+
   .composer-wrap{
     width:100%;
     display:flex;
@@ -674,7 +756,6 @@
     .empty-state h1{ font-size:24px; }
   }
 
-  /* Loading gate while auth resolves */
   #authGate{
     position:fixed;
     inset:0;
@@ -690,7 +771,6 @@
 </head>
 <body data-theme="light">
 
-<!-- Shown briefly while we check for an existing Supabase session -->
 <div id="authGate">Loading…</div>
 
 <!-- ============================= LANDING PAGE ============================= -->
@@ -814,7 +894,19 @@
       <div class="brand-dot"></div>
       <div class="brand-name">InsightAI</div>
     </div>
-    <div class="sidebar-body"></div>
+
+    <div class="new-chat-wrap">
+      <button class="new-chat-btn" id="newChatBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New chat
+      </button>
+    </div>
+
+    <div class="sidebar-body" id="sidebarBody">
+      <div class="history-label">Chat history</div>
+      <div id="historyList"><div class="history-empty">No conversations yet</div></div>
+    </div>
+
     <div class="sidebar-bottom">
       <div class="logout-menu" id="logoutMenu">
         <button id="logoutBtn">
@@ -858,17 +950,14 @@
   </main>
 </div>
 
-<!-- Supabase JS client (v2) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ---------- Supabase setup ----------
-  // NOTE: SUPABASE_URL must be the project base URL (no /rest/v1/ suffix) —
-  // the JS client adds the right paths itself.
   const SUPABASE_URL = "https://uadwglrqfrurduucjyhz.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhZHdnbHJxZnJ1cmR1dWNqeWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1Mjk4NTUsImV4cCI6MjEwMDEwNTg1NX0.ag23UHM3HdtxXsiRvkTOwEFL4QP8Q9YtMcEBwxLxSe4";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const API_URL = "http://127.0.0.1:8000/chat";
+  const BACKEND_URL = "http://127.0.0.1:8000";
 
   const body = document.body;
   const authGate = document.getElementById('authGate');
@@ -887,6 +976,8 @@
   const messagesEl = document.getElementById('messages');
   const emptyState = document.getElementById('emptyState');
   const chatScroll = document.getElementById('chatScroll');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const historyList = document.getElementById('historyList');
 
   const userRow = document.getElementById('userRow');
   const userAvatar = document.getElementById('userAvatar');
@@ -897,7 +988,11 @@
 
   const isMobile = () => window.innerWidth <= 720;
 
-  // ---------- Theme (single toggle, lives on the landing page) ----------
+  // conversation currently open ("" = none created yet — will be created
+  // lazily on first message send)
+  let currentConversationId = null;
+
+  // ---------- Theme ----------
   const sunIcon = `<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>`;
   const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
 
@@ -913,7 +1008,7 @@
     applyTheme(body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 
-  // ---------- Auth: Google sign-in via Supabase ----------
+  // ---------- Auth ----------
   async function signInWithGoogle(){
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
@@ -936,7 +1031,7 @@
     appEl.style.display = 'none';
   }
 
-  function showApp(user){
+  async function showApp(user){
     authGate.style.display = 'none';
     landingPage.style.display = 'none';
     appEl.style.display = 'flex';
@@ -954,9 +1049,11 @@
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#12294D"/><text x="16" y="21" font-size="14" fill="#fff" text-anchor="middle" font-family="Arial">${name.charAt(0).toUpperCase()}</text></svg>`
       );
     }
+
+    resetToNewChat();
+    loadConversationList();
   }
 
-  // Toggle the logout menu when the user row is clicked
   userRow.addEventListener('click', () => {
     logoutMenu.classList.toggle('show');
     userRow.classList.toggle('open');
@@ -964,10 +1061,8 @@
 
   logoutBtn.addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
-    // onAuthStateChange below flips the UI back to the landing page
   });
 
-  // React to sign-in / sign-out (also fires right after the OAuth redirect back)
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     logoutMenu.classList.remove('show');
     userRow.classList.remove('open');
@@ -978,7 +1073,6 @@
     }
   });
 
-  // Initial check on page load
   (async function initAuth(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(session && session.user){
@@ -988,7 +1082,22 @@
     }
   })();
 
-  // ---------- Sidebar toggle (chat app) ----------
+  async function getAuthToken(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session ? session.access_token : null;
+  }
+
+  async function authedFetch(path, options = {}){
+    const token = await getAuthToken();
+    if(!token) throw new Error('Not signed in');
+    const headers = Object.assign(
+      { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      options.headers || {}
+    );
+    return fetch(`${BACKEND_URL}${path}`, { ...options, headers });
+  }
+
+  // ---------- Sidebar toggle ----------
   function openSidebar(){
     if(isMobile()){
       sidebar.classList.add('mobile-open');
@@ -1014,6 +1123,95 @@
     closeSidebar();
   });
 
+  // ---------- Chat history (sidebar list) ----------
+  async function loadConversationList(){
+    try{
+      const res = await authedFetch('/conversations');
+      if(!res.ok) throw new Error('failed');
+      const data = await res.json();
+      renderHistoryList(data.conversations || []);
+    } catch(err){
+      historyList.innerHTML = '<div class="history-empty">Couldn\'t load history</div>';
+    }
+  }
+
+  function renderHistoryList(conversations){
+    if(!conversations.length){
+      historyList.innerHTML = '<div class="history-empty">No conversations yet</div>';
+      return;
+    }
+    historyList.innerHTML = '';
+    conversations.forEach(convo => {
+      const item = document.createElement('div');
+      item.className = 'history-item' + (convo.id === currentConversationId ? ' active' : '');
+      item.dataset.id = convo.id;
+
+      const title = document.createElement('span');
+      title.className = 'title';
+      title.textContent = convo.title || 'New chat';
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.title = 'Delete conversation';
+      delBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>`;
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteConversation(convo.id);
+      });
+
+      item.appendChild(title);
+      item.appendChild(delBtn);
+      item.addEventListener('click', () => openConversation(convo.id));
+      historyList.appendChild(item);
+    });
+  }
+
+  async function deleteConversation(id){
+    try{
+      await authedFetch(`/conversations/${id}`, { method: 'DELETE' });
+      if(id === currentConversationId){
+        resetToNewChat();
+      }
+      loadConversationList();
+    } catch(err){
+      alert("Couldn't delete that conversation.");
+    }
+  }
+
+  function resetToNewChat(){
+    currentConversationId = null;
+    messagesEl.innerHTML = '';
+    messagesEl.style.display = 'none';
+    emptyState.style.display = 'flex';
+    input.value = '';
+    input.style.height = 'auto';
+    if(isMobile()){ sidebarShown = false; closeSidebar(); }
+    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+  }
+
+  async function openConversation(id){
+    currentConversationId = id;
+    document.querySelectorAll('.history-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === id);
+    });
+
+    messagesEl.innerHTML = '';
+    emptyState.style.display = 'none';
+    messagesEl.style.display = 'flex';
+
+    try{
+      const res = await authedFetch(`/conversations/${id}/messages`);
+      const data = await res.json();
+      (data.messages || []).forEach(m => addMessage(m.content, m.role === 'user' ? 'user' : 'bot'));
+    } catch(err){
+      addMessage("Couldn't load this conversation.", 'bot');
+    }
+
+    if(isMobile()){ sidebarShown = false; closeSidebar(); }
+  }
+
+  newChatBtn.addEventListener('click', resetToNewChat);
+
   // ---------- Auto-expanding textarea ----------
   input.addEventListener('input', () => {
     input.style.height = 'auto';
@@ -1026,7 +1224,7 @@
     }
   });
 
-  // ---------- Minimal markdown renderer for bot replies ----------
+  // ---------- Minimal markdown renderer ----------
   function escapeHtml(str){
     return str
       .replace(/&/g, '&amp;')
@@ -1038,7 +1236,7 @@
     const escaped = escapeHtml(raw);
     const lines = escaped.split('\n');
     let html = '';
-    let listType = null; // 'ul' | 'ol' | null
+    let listType = null;
 
     function closeList(){
       if(listType){
@@ -1049,15 +1247,9 @@
 
     lines.forEach(line => {
       const trimmed = line.trim();
+      if(trimmed === ''){ closeList(); return; }
 
-      if(trimmed === ''){
-        closeList();
-        return;
-      }
-
-      // Bold: **text**
       let formatted = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
       const bulletMatch = formatted.match(/^[-*]\s+(.*)/);
       const numberedMatch = formatted.match(/^\d+[.)]\s+(.*)/);
 
@@ -1077,7 +1269,7 @@
     return html;
   }
 
-  // ---------- Chat logic ----------
+  // ---------- Chat rendering ----------
   function addMessage(text, sender){
     if(emptyState.style.display !== 'none'){
       emptyState.style.display = 'none';
@@ -1098,43 +1290,38 @@
     return bubble;
   }
 
-  function addTyping(){
+  // Creates an empty bot bubble that we append streamed tokens into.
+  function addStreamingBubble(){
+    if(emptyState.style.display !== 'none'){
+      emptyState.style.display = 'none';
+      messagesEl.style.display = 'flex';
+    }
     const row = document.createElement('div');
     row.className = 'msg-row bot';
-    row.id = 'typingRow';
     const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.innerHTML = `<span class="typing"><span></span><span></span><span></span></span>`;
+    bubble.className = 'bubble stream-cursor';
     row.appendChild(bubble);
     messagesEl.appendChild(row);
     chatScroll.scrollTop = chatScroll.scrollHeight;
+    return bubble;
   }
 
-  function removeTyping(){
-    const row = document.getElementById('typingRow');
-    if(row) row.remove();
+  async function ensureConversation(){
+    if(currentConversationId) return currentConversationId;
+    // Title is intentionally NOT the raw question here -- the backend
+    // generates a real short summary title once the first reply finishes
+    // (see the 'done' event handler below), so this is just a placeholder.
+    const res = await authedFetch('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'New chat' })
+    });
+    const data = await res.json();
+    currentConversationId = data.conversation.id;
+    loadConversationList();
+    return currentConversationId;
   }
 
-  function formatBotReply(data){
-    // Preferred: backend already sent a ready-to-show text reply.
-    if(data.reply && typeof data.reply === 'string'){
-      return data.reply;
-    }
-    // Fallback: backend sent structured tool output (e.g. sales analysis)
-    // without a formatted "reply" — build a readable message from it here
-    // so the UI never shows a false "couldn't understand" message.
-    if(data.analysis && typeof data.analysis === 'object'){
-      const a = data.analysis;
-      const lines = ["Here's the breakdown of your sales data:", ""];
-      if(a.total_sales !== undefined) lines.push(`- Total sales: ${a.total_sales}`);
-      if(a.average_sales !== undefined) lines.push(`- Average sales: ${Number(a.average_sales).toFixed(2)}`);
-      if(a.highest_sales !== undefined) lines.push(`- Highest sales: ${a.highest_sales}`);
-      if(a.lowest_sales !== undefined) lines.push(`- Lowest sales: ${a.lowest_sales}`);
-      return lines.join('\n');
-    }
-    return "Sorry, I couldn't understand that.";
-  }
-
+  // ---------- Streaming send ----------
   async function sendMessage(){
     const text = input.value.trim();
     if(!text) return;
@@ -1143,26 +1330,82 @@
     input.value = '';
     input.style.height = 'auto';
     sendBtn.disabled = true;
-    addTyping();
+
+    let conversationId;
+    try{
+      conversationId = await ensureConversation();
+    } catch(err){
+      sendBtn.disabled = false;
+      addMessage("Couldn't start a conversation. Please make sure you're signed in.", 'bot');
+      return;
+    }
+
+    const bubble = addStreamingBubble();
+    let accumulated = '';
 
     try{
-      const res = await fetch(API_URL, {
+      const token = await getAuthToken();
+      const res = await fetch(`${BACKEND_URL}/chat/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: text, conversation_id: conversationId })
       });
 
-      if(!res.ok){
+      if(!res.ok || !res.body){
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.detail || `Server error (${res.status})`);
       }
 
-      const data = await res.json();
-      removeTyping();
-      addMessage(formatBotReply(data), 'bot');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while(true){
+        const { value, done } = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split('\n\n');
+        buffer = events.pop(); // last chunk may be incomplete
+
+        for(const evt of events){
+          const line = evt.trim();
+          if(!line.startsWith('data:')) continue;
+          const jsonStr = line.slice(5).trim();
+          if(!jsonStr) continue;
+
+          let payload;
+          try{ payload = JSON.parse(jsonStr); } catch(e){ continue; }
+
+          if(payload.type === 'token'){
+            accumulated += payload.content;
+            bubble.innerHTML = renderMarkdown(accumulated);
+            chatScroll.scrollTop = chatScroll.scrollHeight;
+          } else if(payload.type === 'error'){
+            accumulated += `\n\n_${payload.message || 'Something went wrong.'}_`;
+            bubble.innerHTML = renderMarkdown(accumulated);
+          } else if(payload.type === 'done'){
+            // On the first exchange in a conversation, the backend writes
+            // a real summary title (see maybe_update_title in main.py) and
+            // sends it back here -- refresh the sidebar so it shows up
+            // instead of the "New chat" placeholder.
+            if(payload.title){
+              loadConversationList();
+            }
+          }
+        }
+      }
+
+      bubble.classList.remove('stream-cursor');
+      if(!accumulated.trim()){
+        bubble.innerHTML = renderMarkdown("Sorry, I couldn't generate a reply.");
+      }
     } catch(err){
-      removeTyping();
-      addMessage("Couldn't connect to the backend. Make sure the FastAPI server (main.py) is running.", 'bot');
+      bubble.classList.remove('stream-cursor');
+      bubble.innerHTML = renderMarkdown("Couldn't connect to the backend. Make sure the FastAPI server (main.py) is running.");
     } finally {
       sendBtn.disabled = false;
     }
