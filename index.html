@@ -710,6 +710,32 @@
   }
   .composer textarea::placeholder{ color:var(--muted); }
 
+  .upload-btn{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background .2s ease, opacity .2s ease;
+  }
+  .upload-btn:hover{ background:var(--gold-soft); }
+  .upload-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .upload-btn svg{ width:16px; height:16px; }
+
+  .upload-status{
+    text-align:center;
+    font-size:12.5px;
+    color:var(--muted);
+    padding:0 24px 8px;
+  }
+  .upload-status.error{ color:var(--danger); }
+
   .send-btn{
     width:38px;
     height:38px;
@@ -939,8 +965,14 @@
       <div class="messages" id="messages" style="display:none;"></div>
     </div>
 
+    <div class="upload-status" id="uploadStatus" style="display:none;"></div>
+
     <div class="composer-wrap">
       <div class="composer" id="composerBox">
+        <input type="file" id="fileInput" accept=".pdf" style="display:none;">
+        <button class="upload-btn" id="uploadBtn" aria-label="Upload document" title="Upload a PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </button>
         <textarea id="input" rows="1" placeholder="Ask something..."></textarea>
         <button class="send-btn" id="sendBtn" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
@@ -957,7 +989,7 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhZHdnbHJxZnJ1cmR1dWNqeWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1Mjk4NTUsImV4cCI6MjEwMDEwNTg1NX0.ag23UHM3HdtxXsiRvkTOwEFL4QP8Q9YtMcEBwxLxSe4";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const BACKEND_URL = "http://127.0.0.1:8000";
+  const BACKEND_URL = "";
 
   const body = document.body;
   const authGate = document.getElementById('authGate');
@@ -985,6 +1017,10 @@
   const userEmail = document.getElementById('userEmail');
   const logoutMenu = document.getElementById('logoutMenu');
   const logoutBtn = document.getElementById('logoutBtn');
+
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const uploadStatus = document.getElementById('uploadStatus');
 
   const isMobile = () => window.innerWidth <= 720;
 
@@ -1096,6 +1132,48 @@
     );
     return fetch(`${BACKEND_URL}${path}`, { ...options, headers });
   }
+
+  // ---------- Document upload ----------
+  uploadBtn.addEventListener('click', () => {
+    if(uploadBtn.disabled) return;
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = ''; // reset so the same file can be picked again later
+    if(!file) return;
+
+    uploadBtn.disabled = true;
+    uploadStatus.style.display = 'block';
+    uploadStatus.classList.remove('error');
+    uploadStatus.textContent = `Uploading and indexing "${file.name}"...`;
+
+    try{
+      const token = await getAuthToken();
+      if(!token) throw new Error('Not signed in');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${BACKEND_URL}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.detail || `Upload failed (${res.status})`);
+
+      uploadStatus.textContent = `"${data.filename}" indexed (${data.chunks_indexed} chunks). You can ask about it now.`;
+      setTimeout(() => { uploadStatus.style.display = 'none'; }, 5000);
+    } catch(err){
+      uploadStatus.classList.add('error');
+      uploadStatus.textContent = err.message || "Couldn't upload that file.";
+    } finally {
+      uploadBtn.disabled = false;
+    }
+  });
 
   // ---------- Sidebar toggle ----------
   function openSidebar(){

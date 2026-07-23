@@ -1,5 +1,5 @@
 fastapi==0.139.2
-fitz==0.0.1.dev2
+PyMuPDF
 groq==1.5.0
 networkx==3.6.1
 openpyxl==3.1.5
@@ -12,3 +12,6 @@ supabase==2.31.0
 tavily_python==0.7.26
 urllib3==2.7.0
 xlrd==2.0.1
+python-multipart
+sentence-transformers
+uvicorn[standard]

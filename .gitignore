@@ -1,3 +1,4 @@
+.rag_cache/
 echo "__pycache__/
 *.pyc
 venv/
