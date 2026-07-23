@@ -1,7 +1,7 @@
 .rag_cache/
-echo "__pycache__/
+__pycache__/
 *.pyc
 venv/
 .venv/
-.vscode/" > .gitignore
+.vscode/
 .env

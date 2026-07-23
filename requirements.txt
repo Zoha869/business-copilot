@@ -13,5 +13,5 @@ tavily_python==0.7.26
 urllib3==2.7.0
 xlrd==2.0.1
 python-multipart
-sentence-transformers
+fastembed==0.5.4
 uvicorn[standard]

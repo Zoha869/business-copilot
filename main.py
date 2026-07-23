@@ -20,8 +20,8 @@ import fitz  # PyMuPDF, for reading uploaded PDFs
 from groq import Groq
 from tavily import TavilyClient
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct
-from sentence_transformers import SentenceTransformer
+from qdrant_client.models import PointStruct, Distance, VectorParams
+from fastembed import TextEmbedding
 
 # ============================================================
 # Env / Configuration
@@ -47,29 +47,38 @@ if SUPABASE_URL:
     except Exception as e:
         print(f"[auth] Could not set up JWKS client: {e}")
 
-EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
-EMBED_DIM = 384
-
+EMBED_DIM = 384  # all-MiniLM-L6-v2 dimension (fastembed "all-MiniLM-L6-v2" also uses 384)
 CACHE_DIR = ".rag_cache"
 GRAPH_PATH = os.path.join(CACHE_DIR, "graph.pkl")
 COMMUNITY_REPORTS_PATH = os.path.join(CACHE_DIR, "community_reports.json")
 QDRANT_PATH = os.path.join(CACHE_DIR, "qdrant_data")
 
 # ============================================================
-# Startup: LOAD the pre-built index — no LLM calls, no embedding
-# computation, no graph building happens here. Run build_index.py
-# separately whenever your source PDFs change.
+# Startup: LOAD models and index
 # ============================================================
-if not os.path.exists(QDRANT_PATH):
-    raise RuntimeError(
-        f"No index found at {QDRANT_PATH}. Run `python build_index.py` first to build it."
-    )
-
-print("Loading embedding model...")
-_embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+print("Loading embedding model (fastembed)...")
+# fastembed downloads the model on first use; subsequent uses are cached.
+_embed_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 print("Loading vector index...")
-qdrant_client = QdrantClient(path=QDRANT_PATH)
+# Use in-memory Qdrant for Vercel (ephemeral filesystem).
+# On first run with no existing data, we create an empty collection.
+try:
+    if os.path.exists(QDRANT_PATH):
+        qdrant_client = QdrantClient(path=QDRANT_PATH)
+    else:
+        qdrant_client = QdrantClient(":memory:")
+        print("No persistent Qdrant found — using in-memory store.")
+except Exception:
+    qdrant_client = QdrantClient(":memory:")
+    print("Could not open persistent Qdrant — using in-memory store.")
+
+# Ensure the collection exists
+if not qdrant_client.collection_exists("business_docs"):
+    qdrant_client.create_collection(
+        collection_name="business_docs",
+        vectors_config=VectorParams(size=EMBED_DIM, distance=Distance.COSINE),
+    )
 
 print("Loading graph + community reports...")
 G = None
@@ -86,7 +95,9 @@ print("Ready.")
 
 
 def get_embedding(text: str):
-    return _embed_model.encode([text], convert_to_numpy=True)[0].tolist()
+    """Generate embedding for a single text string using fastembed."""
+    # fastembed.embed returns a generator of numpy arrays; take the first
+    return list(_embed_model.embed([text]))[0].tolist()
 
 
 def retrieve_context(query: str, limit: int = 3):
@@ -545,10 +556,9 @@ async def upload_document(
 
     chunk_texts = [text[i:i + UPLOAD_CHUNK_SIZE] for i in range(0, len(text), UPLOAD_CHUNK_SIZE)]
 
-    # Batch-embed all new chunks in one go and upsert them straight into the
-    # already-loaded, persistent Qdrant collection — no need to rerun the
-    # whole build_index.py pipeline just to add one document.
-    embeddings = _embed_model.encode(chunk_texts, convert_to_numpy=True)
+    # Batch-embed all new chunks in one go using fastembed and upsert them
+    # straight into the Qdrant collection.
+    embeddings = list(_embed_model.embed(chunk_texts))
     points = [
         PointStruct(
             id=str(uuid.uuid4()),

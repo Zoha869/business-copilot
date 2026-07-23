@@ -34,7 +34,7 @@ import networkx as nx
 import networkx.algorithms.community as nx_community
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -44,7 +44,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY)
 GEN_MODEL_NAME = "llama-3.3-70b-versatile"
 
-EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 EMBED_DIM = 384
 
 EXTRACT_WORKERS = 4
@@ -207,18 +207,10 @@ Text: {text}"""
     _save_json(COMMUNITY_REPORTS_PATH, community_reports)
 
     # ---------------------------------------------------------------
-    # Embeddings — BATCHED, and the append-to-points bug is fixed here
+    # Embeddings — BATCHED using fastembed
     # ---------------------------------------------------------------
     print("[4/6] Computing embeddings (batched)...")
-    _embed_model = SentenceTransformer(EMBED_MODEL_NAME)
-
-    def get_embeddings_batch(texts: List[str]):
-        try:
-            embeddings = _embed_model.encode(texts, convert_to_numpy=True)
-            return [e.tolist() for e in embeddings]
-        except Exception as e:
-            print(f"[embeddings] Error: {e}")
-            return [([0.0] * EMBED_DIM) for _ in texts]
+    _embed_model = TextEmbedding(model_name=EMBED_MODEL_NAME)
 
     points = []
     to_embed_idx = []
@@ -234,10 +226,10 @@ Text: {text}"""
             to_embed_texts.append(c["text"])
 
     if to_embed_texts:
-        new_embs = get_embeddings_batch(to_embed_texts)
+        new_embs = list(_embed_model.embed(to_embed_texts))
         for (key, c), emb in zip(to_embed_idx, new_embs):
-            _embed_cache[key] = emb
-            points.append(PointStruct(id=c["id"], vector=emb, payload=c))
+            _embed_cache[key] = emb.tolist()
+            points.append(PointStruct(id=c["id"], vector=emb.tolist(), payload=c))
 
     _save_json(EMBED_CACHE_PATH, _embed_cache)
     print(f"    {len(points)} chunks embedded (of which {len(to_embed_texts)} newly computed)")
