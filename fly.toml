@@ -1,0 +1,30 @@
+# fly.toml — generated for the Business Copilot FastAPI app
+# Change `app` to a globally-unique name before first deploy
+# (or delete this line and let `fly launch` fill it in).
+app = "business-copilot"
+primary_region = "sin"
+
+[build]
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    timeout = "5s"
+    path = "/"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
