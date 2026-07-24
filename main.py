@@ -3,6 +3,7 @@ import time
 import json
 import pickle
 import uuid
+import tempfile
 from collections import defaultdict, deque
 from typing import Optional
 
@@ -34,6 +35,15 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 
+# NEW: Qdrant Cloud config (falls back to local/in-memory only if not set,
+# which is fine for local dev but will NOT persist on Vercel).
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+# NEW: name of the Supabase Storage bucket where raw PDFs are kept.
+# Create this bucket once in the Supabase dashboard (Storage -> New bucket).
+SUPABASE_PDF_BUCKET = os.getenv("SUPABASE_PDF_BUCKET", "business-pdfs")
+
 groq_client = Groq(api_key=GROQ_API_KEY)
 GEN_MODEL_NAME = "llama-3.3-70b-versatile"
 
@@ -48,30 +58,39 @@ if SUPABASE_URL:
         print(f"[auth] Could not set up JWKS client: {e}")
 
 EMBED_DIM = 384  # all-MiniLM-L6-v2 dimension (fastembed "all-MiniLM-L6-v2" also uses 384)
+
+# CACHE_DIR is only used for local dev (graph.pkl / community_reports.json that
+# ship with the repo). On Vercel the deployment bundle is read-only, but these
+# files are read-only anyway (never written to at runtime), so reading them
+# from the bundle path is fine.
 CACHE_DIR = ".rag_cache"
 GRAPH_PATH = os.path.join(CACHE_DIR, "graph.pkl")
 COMMUNITY_REPORTS_PATH = os.path.join(CACHE_DIR, "community_reports.json")
-QDRANT_PATH = os.path.join(CACHE_DIR, "qdrant_data")
 
 # ============================================================
 # Startup: LOAD models and index
 # ============================================================
 print("Loading embedding model (fastembed)...")
-# fastembed downloads the model on first use; subsequent uses are cached.
+# fastembed downloads the model on first use. On Vercel, set its cache dir to
+# /tmp as well, since the default cache location may not be writable.
+os.environ.setdefault("FASTEMBED_CACHE_PATH", os.path.join(tempfile.gettempdir(), "fastembed_cache"))
 _embed_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 print("Loading vector index...")
-# Use in-memory Qdrant for Vercel (ephemeral filesystem).
-# On first run with no existing data, we create an empty collection.
-try:
-    if os.path.exists(QDRANT_PATH):
-        qdrant_client = QdrantClient(path=QDRANT_PATH)
-    else:
+if QDRANT_URL:
+    # Qdrant Cloud (or any remote Qdrant) - persists across requests/instances.
+    # This is what you should use in production on Vercel.
+    qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    print("Connected to remote Qdrant.")
+else:
+    # Local/dev fallback. NOTE: on Vercel this resets on every cold start and
+    # is NOT shared between concurrent instances - uploaded docs can "disappear".
+    QDRANT_LOCAL_PATH = os.path.join(tempfile.gettempdir(), "qdrant_data")
+    try:
+        qdrant_client = QdrantClient(path=QDRANT_LOCAL_PATH)
+    except Exception:
         qdrant_client = QdrantClient(":memory:")
-        print("No persistent Qdrant found — using in-memory store.")
-except Exception:
-    qdrant_client = QdrantClient(":memory:")
-    print("Could not open persistent Qdrant — using in-memory store.")
+    print("QDRANT_URL not set - using local/in-memory Qdrant (dev only, not persistent on Vercel).")
 
 # Ensure the collection exists
 if not qdrant_client.collection_exists("business_docs"):
@@ -343,6 +362,22 @@ def maybe_update_title(conversation_id: str, user_message: str) -> Optional[str]
     return None
 
 
+def save_pdf_to_storage(safe_name: str, raw: bytes) -> Optional[str]:
+    """Upload the raw PDF bytes to Supabase Storage so the original file
+    survives across serverless cold starts / instances (Vercel's local
+    filesystem is read-only and ephemeral, so we can't rely on disk here).
+    Returns the storage path, or None if storage isn't configured."""
+    if not supabase_admin:
+        return None
+    storage_path = f"{uuid.uuid4()}_{safe_name}"
+    supabase_admin.storage.from_(SUPABASE_PDF_BUCKET).upload(
+        storage_path,
+        raw,
+        {"content-type": "application/pdf"},
+    )
+    return storage_path
+
+
 # ============================================================
 # Conversations API
 # ============================================================
@@ -517,8 +552,6 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-PDF_DIR = "pdfs"
-os.makedirs(PDF_DIR, exist_ok=True)
 UPLOAD_CHUNK_SIZE = 1500
 MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
 
@@ -537,12 +570,18 @@ async def upload_document(
     if len(raw) > MAX_UPLOAD_SIZE_BYTES:
         raise HTTPException(status_code=400, detail="File is too large (max 20 MB).")
 
-    # Save a copy under pdfs/ so it's picked up if build_index.py is ever
-    # re-run from scratch later.
     safe_name = os.path.basename(file.filename)
-    save_path = os.path.join(PDF_DIR, safe_name)
-    with open(save_path, "wb") as f:
-        f.write(raw)
+
+    # Persist the raw PDF to Supabase Storage instead of local disk.
+    # Vercel's filesystem is read-only outside /tmp, and /tmp is wiped
+    # between cold starts, so it can't be relied on for real persistence.
+    storage_path = None
+    try:
+        storage_path = save_pdf_to_storage(safe_name, raw)
+    except Exception as e:
+        # Don't hard-fail the upload just because storage archiving failed -
+        # indexing (below) is what actually matters for chat to work.
+        print(f"[upload] Warning: could not archive PDF to Supabase Storage: {e}")
 
     # Extract text and chunk it the same way build_index.py does.
     try:
@@ -557,7 +596,8 @@ async def upload_document(
     chunk_texts = [text[i:i + UPLOAD_CHUNK_SIZE] for i in range(0, len(text), UPLOAD_CHUNK_SIZE)]
 
     # Batch-embed all new chunks in one go using fastembed and upsert them
-    # straight into the Qdrant collection.
+    # straight into the Qdrant collection (Qdrant Cloud if QDRANT_URL is set,
+    # so this survives across requests/instances on Vercel).
     embeddings = list(_embed_model.embed(chunk_texts))
     points = [
         PointStruct(
@@ -572,6 +612,7 @@ async def upload_document(
     return {
         "status": "success",
         "filename": safe_name,
+        "storage_path": storage_path,
         "chunks_indexed": len(points),
         "message": "Document uploaded and indexed. You can ask questions about it right away.",
     }
