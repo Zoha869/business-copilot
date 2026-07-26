@@ -131,25 +131,25 @@ Use Graph RAG relationships whenever available to improve reasoning.
 
 ## 🏠 Home Page
 
-![Home](screenshots/home.png)
+![Home](screenshorts/home.png)
 
 ---
 
 ## 💬 Chat Interface
 
-![Chat](screenshots/chat.png)
+![Chat](screenshorts/chat.png)
 
 ---
 
 ## 🤖 AI Response
 
-![Response](screenshots/response.png)
+![Response](screenshorts/response.png)
 
 ---
 
 ## 📄 Knowledge Base / PDF Processing
 
-![Knowledge Base](screenshots/pdfupload.png)
+![Knowledge Base](screenshorts/pdfupload.png)
 
 ---
 # 🌐 Live Demo
