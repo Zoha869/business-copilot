@@ -8,9 +8,17 @@ An AI-powered Business Copilot that helps entrepreneurs, students, and small bus
 
 Businesses often store valuable information in PDFs, reports, manuals, and documentation. Searching through these documents manually is time-consuming and inefficient.
 
-*AI Business Copilot* solves this problem by allowing users to ask questions in natural language and receive accurate, AI-generated answers based on their business knowledge base instead of relying only on the model's general knowledge.
+*AI Business Copilot solves* this problem by allowing users to ask questions in natural language and receive accurate, AI-generated answers based on their business knowledge base instead of relying only on the model's general knowledge.
 
 ---
+
+# 💡 Project Reflection
+
+The main vision behind building AI Business Copilot was not just to create another chatbot, but to explore how AI can help businesses better understand and utilize their information.
+
+By combining Vector RAG and Graph RAG, the goal was to make AI more context-aware — helping users retrieve relevant insights, connect information, and get more meaningful responses from their business data.
+
+This project strengthened my belief that the future of AI is not only about generating answers, but about building intelligent systems that can solve real-world problems.
 
 ## 🎯 Target Users
 
